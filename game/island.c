@@ -61,9 +61,16 @@ void checkFile(const char *Filename) {
             } //NOT WORKING RIGHT NOW 
         }
 
+        height++;
+
         
     }
     fclose(file);
+
+    if (width < MINDIM || height < MINDIM || width > MAXDIM || height > MAXDIM) {
+        fprintf(stderr, "width aand height of map are too big or small!\n");
+        exit(EXIT_FILE_ERROR);
+    }
 }
 
 void initialiseIsland (Island *island, Coordinates *player) {
@@ -124,16 +131,23 @@ void allocateMemory (Island *island, char *Filename) {  //Dynamically allocating
 
 }
 
-void movePlayer (char move, Coordinates *player, Island *island) {
+void movePlayer (char move, Coordinates *player, Island *island, const char Filename) {
+    int buffer_size = 101;
+    char line_buffer[buffer_size];
+    FILE *file;
 
     switch (move) {
         case 'a':
         case 'A':
-            if (island->map[player->x][player->y - 1] == 'w') {
+            if (island->map[player->x][player->y-1] == 'w') {
                 printf("Cant go into water!\n");
                 player->y == 0;
             }
-            player->y - 1;
+            else if (island->map[player->x][player->y-1] == 'T') {
+                printf("Cant go into trees!\n");
+                player->y == 0;
+            }
+            player->y -= 1;
         break;
         case 'w':
         case 'W':
@@ -141,26 +155,76 @@ void movePlayer (char move, Coordinates *player, Island *island) {
                 printf("Cant go into water!\n");
                 player->x == 0;
             }
-            player->x+1;
+            else if (island->map[player->x+1][player->y] == 'T') {
+                printf("Cant go into trees!\n");
+                player->x == 0;
+            }
+            else if (island->map[player->x+1][player->y] == 'H') {
+                
+            }
+            player->x += 1;
         break;
+        case 's':
+        case 'S':
+            if (island->map[player->x-1][player->y] == 'w') {
+                printf("Cant go into water!\n");
+                player->x == 0;
+            }
+            else if (island->map[player->x-1][player->y] == 'T') {
+                printf("Cant go into trees!\n");
+                player->x == 0;
+            }
+            player->x -= 1;
+        case 'd':
+        case 'D':
+            if (island->map[player->x][player->y+1] == 'w' ) {
+                printf("Cant go into water!\n");
+                player->y == 0;
+            }
+            else if (island->map[player->x][player->y+1] == 'T') {
+                printf("Cant go into trees!\n");
+                player->y == 0;
+            }
+            player->y += 1;
+        break; 
+        case 'm':
+        case 'M':
+            file = fopen(Filename, "r");
+            while (fgets(line_buffer, buffer_size, file) != NULL) {
+                printf("%s", line_buffer); 
+            }
+        break; 
     }
+}
+
+void hasWon () {
 
 }
 
+
 int main (int argc, char *argv[]) {
     FILE *file;
-    
     Island island;
     Coordinates player;
+    char Filename [101];
 
     if (argc != 2) {
-        fprintf(stderr, "Usage: island <filename>");
+        fprintf(stderr, "Usage: island <filename>\n");
         return EXIT_ARG_ERROR;  
     }
     
     checkFile(argv[1]);
 
+    allocateMemory(&island, Filename);
+
     initialiseIsland(&island, &player);
+
+    char move;
+    printf("Move using W,A,S,D and view the map using M:\n");
+    scanf("%c", &move);
+    movePlayer(move, &player, &island, &Filename);
+
+
 
 
     return EXIT_SUCCESS;
