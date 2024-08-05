@@ -13,6 +13,7 @@
 typedef struct {
     int x;
     int y;
+    int treasuresCollected;
 } Coordinates;
 
 typedef struct {
@@ -23,7 +24,7 @@ typedef struct {
     Coordinates end;
 } Island;
 
-void checkFile(const char *Filename) {
+void checkFile(const char *Filename, Island *island) {
     FILE *file;
     
     file = fopen(Filename, "r");
@@ -31,8 +32,8 @@ void checkFile(const char *Filename) {
     int buffer_size = 101;
     char line_buffer[buffer_size];
 
-    int height = 0;
-    int width = 0;
+    island->height = 0;
+    island->width = 0;
 
     if (file == NULL) {
         exit(EXIT_FILE_ERROR);
@@ -45,8 +46,10 @@ void checkFile(const char *Filename) {
             exit(EXIT_DATA_ERROR);
        }
        int lineLength = strlen(line_buffer);
-       width = lineLength;
-
+       if (island->width == 0) {
+            island->width = lineLength;
+       }
+       
        if (line_buffer[lineLength - 1] == '\n') {
             line_buffer[lineLength - 1] = '\0';
             lineLength--; 
@@ -56,25 +59,24 @@ void checkFile(const char *Filename) {
             char ch = line_buffer[i];
             if (ch != 'S' && ch != 'w' && ch != ' ' && ch != 'T' && ch != 'H') { //Checks the valid characters in the file.
                 fprintf(stderr, "Incorrect chars in this file\n");
-                printf("STOP");
                 exit(EXIT_DATA_ERROR);
             } //NOT WORKING RIGHT NOW 
         }
 
-        height++;
+        island->height++;
 
         
     }
     fclose(file);
 
-    if (width < MINDIM || height < MINDIM || width > MAXDIM || height > MAXDIM) {
-        fprintf(stderr, "width aand height of map are too big or small!\n");
+    if (island->width < MINDIM || island->height < MINDIM || island->width > MAXDIM || island->height > MAXDIM) {
+        fprintf(stderr, "width and height of map are too big or small!\n");
         exit(EXIT_FILE_ERROR);
     }
 }
 
 void initialiseIsland (Island *island, Coordinates *player) {
-    int start = 0;
+    int startCount = 0;
 
     for (int i = 0; i < island->height; i++) {
         for (int j = 0; j < island->width; j++) {
@@ -83,8 +85,8 @@ void initialiseIsland (Island *island, Coordinates *player) {
                 island->start.y = j;
                 player->y = j;
                 player->x = i;
-                start++;
-                if (start == 0) {
+                startCount++;
+                if (startCount == 0) {
                     fprintf(stderr, "No starts\n");
                     exit(EXIT_DATA_ERROR);
                 }
@@ -92,20 +94,14 @@ void initialiseIsland (Island *island, Coordinates *player) {
         }
     }
 
-    if (start >= 2) { //Not working right now ??
+    if (startCount > 1) { //Not working right now ??
         fprintf(stderr, "Too many starts\n");
         exit(EXIT_DATA_ERROR);
     }
 
-    if (start = 0) { //Not working right now ??
-        fprintf(stderr, "No starts present\n");
-        exit(EXIT_DATA_ERROR);
-
-    } 
-
 }
 
-void allocateMemory (Island *island, char *Filename) {  //Dynamically allocating memory 
+void allocateMemory (Island *island, const char *Filename) {  //Dynamically allocating memory 
     FILE *file;
 
     file = fopen(Filename, "r");
@@ -125,13 +121,9 @@ void allocateMemory (Island *island, char *Filename) {  //Dynamically allocating
         }
 
     }
-
-
-
-
 }
 
-void movePlayer (char move, Coordinates *player, Island *island, const char Filename) {
+void movePlayer (char move, Coordinates *player, Island *island) {
     int buffer_size = 101;
     char line_buffer[buffer_size];
     FILE *file;
@@ -147,6 +139,15 @@ void movePlayer (char move, Coordinates *player, Island *island, const char File
                 printf("Cant go into trees!\n");
                 player->y == 0;
             }
+            else if (island->map[player->x][player->y-1] == 'H') {
+                player->treasuresCollected++;
+                printf("You have collected %d treasures \n", player->treasuresCollected);
+                player->y -= 1;  
+                if (player->treasuresCollected == 3) {
+                    printf("Congratulations! You have completed the game!\n");
+                    exit(EXIT_SUCCESS);
+                }   
+            }
             player->y -= 1;
         break;
         case 'w':
@@ -160,7 +161,13 @@ void movePlayer (char move, Coordinates *player, Island *island, const char File
                 player->x == 0;
             }
             else if (island->map[player->x+1][player->y] == 'H') {
-                
+                player->treasuresCollected++;
+                printf("You have collected treasures\n", player->treasuresCollected);
+                player->x += 1;
+                if (player->treasuresCollected == 3) {
+                    printf("Congratulations! You have completed the game!\n");
+                    exit(EXIT_SUCCESS);
+                }    
             }
             player->x += 1;
         break;
@@ -174,6 +181,15 @@ void movePlayer (char move, Coordinates *player, Island *island, const char File
                 printf("Cant go into trees!\n");
                 player->x == 0;
             }
+            else if (island->map[player->x-1][player->y] == 'H') {
+                player->treasuresCollected++;
+                printf("You have collected treasures \n", player->treasuresCollected);
+                player->x -= 1;
+                if (player->treasuresCollected == 3) {
+                    printf("Congratulations! You have completed the game!\n");
+                    exit(EXIT_SUCCESS);
+                }        
+            }
             player->x -= 1;
         case 'd':
         case 'D':
@@ -185,13 +201,21 @@ void movePlayer (char move, Coordinates *player, Island *island, const char File
                 printf("Cant go into trees!\n");
                 player->y == 0;
             }
+            else if (island->map[player->x][player->y+1] == 'H') {
+                player->treasuresCollected++;
+                printf("You have now collected treasures\n", player->treasuresCollected);
+                player->y += 1;
+                if (player->treasuresCollected == 3) {
+                    printf("Congratulations! You have completed the game!\n");
+                    exit(EXIT_SUCCESS);
+                }    
+            }
             player->y += 1;
         break; 
         case 'm':
         case 'M':
-            file = fopen(Filename, "r");
-            while (fgets(line_buffer, buffer_size, file) != NULL) {
-                printf("%s", line_buffer); 
+            for (int i = 0; i < island->height; i++) {
+                printf("%s\n", island->map[i]);
             }
         break; 
     }
@@ -213,19 +237,23 @@ int main (int argc, char *argv[]) {
         return EXIT_ARG_ERROR;  
     }
     
-    checkFile(argv[1]);
+    checkFile(argv[1], &island);
 
     allocateMemory(&island, Filename);
 
     initialiseIsland(&island, &player);
 
     char move;
-    printf("Move using W,A,S,D and view the map using M:\n");
-    scanf("%c", &move);
-    movePlayer(move, &player, &island, &Filename);
+    while (1) {
+        printf("Move using W,A,S,D and view the map using M:\n");
+        scanf("%c", &move);
+        movePlayer(move, &player, &island);
+    }
 
-
-
+    for (int i = 0; i < island.height; i++) {
+        free(island.map[i]);
+    }
+    free(island.map);
 
     return EXIT_SUCCESS;
 
