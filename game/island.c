@@ -5,10 +5,10 @@
 #define MAXDIM 100
 #define MINDIM 5
 
-#define EXIT_SUCCESS 0  //Game runs coorectly 
-#define EXIT_ARG_ERROR 1  //Bad number of arguments or bad dimension
-#define EXIT_FILE_ERROR 2 //File cannot be read 
-#define EXIT_DATA_ERROR 3 //File is not a valid map 
+#define EXIT_SUCCESS 0  // Game runs correctly
+#define EXIT_ARG_ERROR 1  // Bad number of arguments or bad dimension
+#define EXIT_FILE_ERROR 2 // File cannot be read
+#define EXIT_DATA_ERROR 3 // File is not a valid map
 
 typedef struct {
     int x;
@@ -21,12 +21,11 @@ typedef struct {
     int height;
     int width;
     Coordinates start;
-    Coordinates end;
 } Island;
 
 void checkFile(const char *Filename, Island *island) {
     FILE *file;
-    
+
     file = fopen(Filename, "r");
 
     int buffer_size = 101;
@@ -39,44 +38,70 @@ void checkFile(const char *Filename, Island *island) {
         exit(EXIT_FILE_ERROR);
     }
 
-    while (fgets(line_buffer, buffer_size, file) != NULL) { 
-       
-        if (strlen(line_buffer) >= buffer_size - 1) {  //compares the bufferSize and the length of the line to ensure there is no segmentation fault. 
-            fprintf(stderr, "Length of line bigger than buffer size \n");
+    while (fgets(line_buffer, buffer_size, file) != NULL) {
+        if (strlen(line_buffer) >= buffer_size - 1) {
+            fprintf(stderr, "Length of line bigger than buffer size\n");
             exit(EXIT_DATA_ERROR);
         }
         int lineLength = strlen(line_buffer);
         if (island->width == 0) {
             island->width = lineLength;
         }
-       
+
         if (line_buffer[lineLength - 1] == '\n') {
             line_buffer[lineLength - 1] = '\0';
-            lineLength--; 
+            lineLength--;
         }
 
         for (int i = 0; i < lineLength; i++) {
             char ch = line_buffer[i];
-            if (ch != 'S' && ch != 'w' && ch != ' ' && ch != 'T' && ch != 'H') { //Checks the valid characters in the file.
+            if (ch != 'S' && ch != 'w' && ch != ' ' && ch != 'T' && ch != 'H') {
                 fprintf(stderr, "Incorrect chars in this file\n");
                 exit(EXIT_DATA_ERROR);
-            } //NOT WORKING RIGHT NOW 
+            }
         }
 
-
         island->height++;
-
-        
     }
     fclose(file);
 
     if (island->width < MINDIM || island->height < MINDIM || island->width > MAXDIM || island->height > MAXDIM) {
-        fprintf(stderr, "width and height of map are too big or small!\n");
+        fprintf(stderr, "Width and height of map are too big or small!\n");
         exit(EXIT_FILE_ERROR);
     }
 }
 
-void initialiseIsland (Island *island, Coordinates *player) {
+void allocateMemory(Island *island) {
+    island->map = (char **)malloc(island->height * sizeof(char *));
+    if (island->map == NULL) {
+        fprintf(stderr, "Memory allocation failed!\n");
+        exit(EXIT_DATA_ERROR);
+    }
+
+    for (int i = 0; i < island->height; i++) {
+        island->map[i] = (char *)malloc((island->width + 1) * sizeof(char));
+        if (island->map[i] == NULL) {
+            fprintf(stderr, "Memory allocation failed!\n");
+            exit(EXIT_DATA_ERROR);
+        }
+    }
+}
+
+void readMap(const char *Filename, Island *island) {
+    FILE *file = fopen(Filename, "r");
+    int buffer_size = 101;
+    char line_buffer[buffer_size];
+    int currentLine = 0;
+
+    while (fgets(line_buffer, buffer_size, file) != NULL) {
+        strncpy(island->map[currentLine], line_buffer, island->width);
+        island->map[currentLine][island->width] = '\0';
+        currentLine++;
+    }
+    fclose(file);
+}
+
+void initialiseIsland(Island *island, Coordinates *player) {
     int startCount = 0;
 
     for (int i = 0; i < island->height; i++) {
@@ -84,115 +109,108 @@ void initialiseIsland (Island *island, Coordinates *player) {
             if (island->map[i][j] == 'S') {
                 island->start.x = i;
                 island->start.y = j;
-                player->y = j;
                 player->x = i;
+                player->y = j;
                 player->treasuresCollected = 0;
                 startCount++;
-                if (startCount == 0) {
-                    fprintf(stderr, "No starts\n");
-                    exit(EXIT_DATA_ERROR);
-                }
             }
         }
     }
 
-    if (startCount > 1) { //Not working right now ??
+    if (startCount == 0) {
+        fprintf(stderr, "No starts\n");
+        exit(EXIT_DATA_ERROR);
+    } else if (startCount > 1) {
         fprintf(stderr, "Too many starts\n");
         exit(EXIT_DATA_ERROR);
     }
-
 }
 
-void allocateMemory (Island *island, const char *Filename) {  //Dynamically allocating memory 
-    FILE *file;
-
-    file = fopen(Filename, "r");
-
-    island->map = (char **)malloc(island->height * sizeof(char *));
-
-    if (island->map == NULL) {
-        fprintf(stderr, "Memory allocation failed!\n");
-        exit(EXIT_DATA_ERROR);
-    }
-
+void displayMap(Island *island, Coordinates *player) {
     for (int i = 0; i < island->height; i++) {
-        island->map[i] = (char *)malloc(island->width * sizeof(char));
-        if (island->map[i] == NULL) {
-            fprintf(stderr, "Memory allocation failed!\n");
-            exit(EXIT_DATA_ERROR);
+        for (int j = 0; j < island->width; j++) {
+            if (i == player->x && j == player->y) {
+                printf("X");
+            } else {
+                printf("%c", island->map[i][j]);
+            }
         }
-
+        printf("\n");
     }
 }
 
-void movePlayer (char move, Coordinates *player, Island *island) {
-    int buffer_size = 101;
-    char line_buffer[buffer_size];
-    FILE *file;
+void movePlayer(char move, Coordinates *player, Island *island) {
+    int newX = player->x;
+    int newY = player->y;
 
     switch (move) {
         case 'a':
         case 'A':
-            player->y -= 1;
-        break;
+            newY--;
+            break;
         case 'w':
         case 'W':
-            player->x += 1;
-        break;
+            newX--;
+            break;
         case 's':
         case 'S':
-            player->x -= 1;
+            newX++;
+            break;
         case 'd':
         case 'D':
-            player->y += 1;
-        break; 
-        case 'm':
-        case 'M':
-        break; 
-    }
-}
-
-void printIsland (const char *Filename) {
-    FILE *file;
-    file = fopen(Filename, "r");
-
-    int buffer_size = 101;
-    char line_buffer[buffer_size];
-
-    while (fgets(line_buffer, buffer_size, file) != NULL) {
-        printf("%s", line_buffer);
+            newY++;
+            break;
     }
 
+    if (newX < 0 || newX >= island->height || newY < 0 || newY >= island->width) {
+        printf("Move out of bounds!\n");
+        return;
+    }
+
+    char destination = island->map[newX][newY];
+
+    if (destination == 'w') {
+        printf("Can't go into water!\n");
+        return;
+    } else if (destination == 'T') {
+        printf("Can't go into trees!\n");
+        return;
+    } else if (destination == 'H') {
+        player->treasuresCollected++;
+        printf("You have collected %d treasures\n", player->treasuresCollected);
+        if (player->treasuresCollected == 3) {
+            printf("Congratulations! You have completed the game!\n");
+            exit(EXIT_SUCCESS);
+        }
+    }
+
+    player->x = newX;
+    player->y = newY;
 }
 
-int main (int argc, char *argv[]) {
-    char Filename[101];
-    FILE *file;
+int main(int argc, char *argv[]) {
     Island island;
     Coordinates player;
 
     if (argc != 2) {
         fprintf(stderr, "Usage: island <filename>\n");
-        return EXIT_ARG_ERROR;  
+        return EXIT_ARG_ERROR;
     }
+
     checkFile(argv[1], &island);
-
-    strcpy(Filename, argv[1]);
-
-    allocateMemory(&island, Filename);
-
+    
+    allocateMemory(&island);
+    
+    readMap(argv[1], &island);
+    
     initialiseIsland(&island, &player);
 
     char move;
     while (1) {
-        printf("Move using W,A,S,D and view the map using M:\n");
+        displayMap(&island, &player);
+        printf("Move using W, A, S, D and view the map using M:\n");
         scanf(" %c", &move);
         movePlayer(move, &player, &island);
-
-        if (move == 'm' || move == 'M') {
-            printIsland(Filename);
-            printf("\n");
-        }
     }
 
     for (int i = 0; i < island.height; i++) {
@@ -201,5 +219,4 @@ int main (int argc, char *argv[]) {
     free(island.map);
 
     return EXIT_SUCCESS;
-
 }
