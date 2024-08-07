@@ -189,7 +189,8 @@ void movePlayer(char move, Coordinates *player, Island *island) {
     else if (nextMove == 'H') {
         player->treasuresCollected++;
         printf("You have collected %d treasure(s)\n", player->treasuresCollected);
-        if (player->treasuresCollected == 3) {
+        island->map[X][Y] = ' '; //When one treasure is collected, it disappears to ensure you cannot go off and on.  
+        if (player->treasuresCollected == 3) { // When all 3 treasures are collected, the game ends. 
             printf("Congratulations! You have completed the game!\n");
             exit(EXIT_SUCCESS);
         }
@@ -222,16 +223,16 @@ int main(int argc, char *argv[]) {
         printf("Move using W, A, S, D and view the map using M:\n");
         scanf(" %c", &move);
         if (move == 'm' || move == 'M') {
-            displayMap(&island, &player);
+            displayMap(&island, &player); // Only displays the map when 'm' or 'M' is inputted
         }
         else {
             printf("Havent found any treasure yet!\n");
         }
-        movePlayer(move, &player, &island);
+        movePlayer(move, &player, &island); 
     }
 
     for (int i = 0; i < island.height; i++) {
-        free(island.map[i]);
+        free(island.map[i]); // Freeing the dynamically allocated memory
     }
     free(island.map);
 
