@@ -1,9 +1,9 @@
 wwwwwwwwwwwwwwwwwwwww
 w                   w
 w    S              w
-w                   w   
-w    TTTTT      H   w
 w                   w
+w                   w
+w    TTTTT  H       w
 w                   w
 w  H      TTT       w
 w                   w
@@ -11,4 +11,11 @@ w      TTT          w
 w                   w
 w              H    w
 w                   w
+w                   w
+wwwwwwwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwwwwwwww
 wwwwwwwwwwwwwwwwwwwww
