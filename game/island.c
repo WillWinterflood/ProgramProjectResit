@@ -36,7 +36,6 @@ void checkFile(const char *Filename, Island *island) {
     char line_buffer[buffer_size];
     island->height = 0;
     island->width = 0;
-    char line[MAXDIM][buffer_size];
 
     while (fgets(line_buffer, buffer_size, file) != NULL) {
         int lineLength = strlen(line_buffer);
@@ -59,38 +58,36 @@ void checkFile(const char *Filename, Island *island) {
                 exit(EXIT_DATA_ERROR);
             }
         }
-        strncpy(line[island->height], line_buffer, buffer_size);
         island->height++;
     }
     
-    rewind(file);
+    rewind(file); //Go back to the top of the text file
 
-    fgets(line_buffer,buffer_size, file);
-    for (int i = 0; i < island->width; i++) {
-        if (line_buffer[i] != 'w') {
-            fprintf(stderr, "Top border not all water!\n");
-            exit(EXIT_DATA_ERROR);
-        }
-    }
-
-    // Check first and last columns
-    rewind(file); // Go back to start of file
-    int currentLine = 1; //starting from line 2 as the first has been checked already
+    int currentLine = 0; //Ensuring we start from line 0
     while (fgets(line_buffer, buffer_size, file) != NULL) {
-        if (line_buffer[0] != 'w') {
-            fprintf(stderr, "Error: Border check failed - left border not all water\n");
-            exit(EXIT_DATA_ERROR);
-        }
-        size_t lineLength = strlen(line_buffer);
+        int lineLength = strlen(line_buffer);
         if (lineLength > 0 && line_buffer[lineLength - 1] == '\n') {
             line_buffer[lineLength - 1] = '\0';
+            lineLength--;
         }
-        if (line_buffer[lineLength - 1] != 'w') {
-            fprintf(stderr, "Error: Border check failed - right border not all water\n");
-            exit(EXIT_DATA_ERROR);
+        if (currentLine == 0 || currentLine == island->height - 1) { //Checking top and bottom border
+            for (int i = 0; i < lineLength; i++) {
+                if (line_buffer[i] != 'w') {
+                    fprintf(stderr, "Border not all water!\n");
+                    exit(EXIT_DATA_ERROR);
+                }
+            }
+        } 
+        else {
+            if (line_buffer[0] != 'w' || line_buffer[lineLength - 1] != 'w') { //Checkking left and right border
+                fprintf(stderr, "Border not all water!\n");
+                exit(EXIT_DATA_ERROR);
+            }
         }
-        currentLine++;
+    currentLine++;
     }
+
+
 
 
     fclose(file);
@@ -106,7 +103,8 @@ void checkFile(const char *Filename, Island *island) {
     }
 }
 
-void allocateMemory(Island *island) {
+void allocateMemory(Island *island) { https://chatgpt.com/share/1ed88aff-2f17-4877-8a2d-84ff537ab962 
+    //I used ChatGPT to help me understand when the correct and incorrect time is to use a malloc function.
     island->map = (char **)malloc(island->height * sizeof(char *));
     if (island->map == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
@@ -134,7 +132,7 @@ void readMap(const char *Filename, Island *island) {
     int currentLine = 0;
 
     while (fgets(line_buffer, buffer_size, file) != NULL) {
-        size_t length = strlen(line_buffer);
+        int length = strlen(line_buffer);
         if (length > 0 && line_buffer[length - 1] == '\n') {
             line_buffer[length - 1] = '\0';
         }
@@ -156,6 +154,7 @@ void initialiseIsland(Island *island, Coordinates *player) {
             if (island->map[i][j] == 'S') {
                 island->start.x = i;
                 island->start.y = j;
+
                 player->x = i;
                 player->y = j;
                 
@@ -173,8 +172,9 @@ void initialiseIsland(Island *island, Coordinates *player) {
     if (startCount == 0) {
         fprintf(stderr, "No starts present!\n");
         exit(EXIT_DATA_ERROR);
-    } else if (startCount > 1) {
-        fprintf(stderr, "Too many starts present\n");
+    } 
+    else if (startCount > 1) {
+        fprintf(stderr, "Too many starts present!\n");
         exit(EXIT_DATA_ERROR);
     }
 
@@ -191,7 +191,8 @@ void displayMap(Island *island, Coordinates *player) {
 
             if (i == player->x && j == player->y) {
                 printf("X");
-            } else {
+            } 
+            else {
                 printf("%c", island->map[i][j]);
             }
         }
@@ -200,7 +201,8 @@ void displayMap(Island *island, Coordinates *player) {
 }
 
 void movePlayer(char move, Coordinates *player, Island *island) {
-    int X = player->x;
+    int X = player->x; //declaring them as X and Y to make it easier to type
+    //I change them back at the end of the function
     int Y = player->y;
 
     switch (move) {
@@ -214,11 +216,13 @@ void movePlayer(char move, Coordinates *player, Island *island) {
             break;
         case 's':
         case 'S':
+            
             X++;
             break;
         case 'd':
         case 'D':
             Y++;
+
             break;
     }
 
@@ -226,17 +230,21 @@ void movePlayer(char move, Coordinates *player, Island *island) {
 
     if (nextMove == 'w') {
         printf("Can't go into water!\n");
-    } else if (nextMove == 'T') {
+
+    } 
+    else if (nextMove == 'T') {
         printf("Can't go into trees!\n");
-    } else if (nextMove == 'H') {
+    } 
+    else if (nextMove == 'H') {
         player->treasuresCollected++;
         printf("You have collected %d treasure(s)\n", player->treasuresCollected);
-        island->map[X][Y] = ' '; // When one treasure is collected, it disappears to ensure you cannot go off and on.
+        island->map[X][Y] = ' '; // When one treasure is collected, it disappears to ensure you cannot collect it again and cheat.
         if (player->treasuresCollected == 3) { // When all 3 treasures are collected, the game ends.
             printf("Congratulations! You have completed the game!\n");
             exit(EXIT_SUCCESS);
         }
-    } else {
+    } 
+    else {
         player->x = X;
         player->y = Y;
     }
@@ -252,8 +260,11 @@ int main(int argc, char *argv[]) {
     }
 
     checkFile(argv[1], &island);
+
     allocateMemory(&island);
+
     readMap(argv[1], &island);
+
     initialiseIsland(&island, &player);
 
     char move;
@@ -262,13 +273,14 @@ int main(int argc, char *argv[]) {
         scanf(" %c", &move);
         if (move == 'm' || move == 'M') {
             displayMap(&island, &player);
-        } else {
+        } 
+        else {
             movePlayer(move, &player, &island);
         }
     }
 
     for (int i = 0; i < island.height; i++) {
-        free(island.map[i]);
+        free(island.map[i]); //Freeing the allocated memory, otherwise causes a SEGMENTATION FAULT
     }
     free(island.map);
 
